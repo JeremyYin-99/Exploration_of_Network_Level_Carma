@@ -1,0 +1,12 @@
+# SUMO source checkout and build output
+/sumo/
+
+# Python virtual environment
+/.venv/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
