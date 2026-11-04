@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+Network/shp/**/*.dbf filter=lfs diff=lfs merge=lfs -text
+Network/shp/**/*.shp filter=lfs diff=lfs merge=lfs -text
