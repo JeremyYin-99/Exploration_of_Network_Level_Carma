@@ -6,6 +6,8 @@
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd $ROOT
 export SUMO_HOME=$ROOT/sumo
+# Import traci, libsumo and sumolib from this SUMO build, whatever the shell profile says.
+export PYTHONPATH=$ROOT/sumo/tools${PYTHONPATH:+:$PYTHONPATH}
 PLAN=$1; DAYS=$2; shift 2
 TAG=${TAG:-$PLAN}
 LOG=$ROOT/results/params/$PLAN/logs
