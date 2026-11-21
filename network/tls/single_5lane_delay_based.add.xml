@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<additional>
+  <tlLogic id="C" type="delay_based" programID="delay_based" offset="0">
+    <param key="detectorRange" value="100" />
+    <param key="minTimeLoss" value="1" />
+    <phase duration="42" state="GGGGGGGgggrrrrrrrrrrGGGGGGGgggrrrrrrrrrr" minDur="5" maxDur="50" />
+    <phase duration="3" state="yyyyyyyyyyrrrrrrrrrryyyyyyyyyyrrrrrrrrrr" />
+    <phase duration="42" state="rrrrrrrrrrGGGGGGGgggrrrrrrrrrrGGGGGGGggg" minDur="5" maxDur="50" />
+    <phase duration="3" state="rrrrrrrrrryyyyyyyyyyrrrrrrrrrryyyyyyyyyy" />
+  </tlLogic>
+</additional>

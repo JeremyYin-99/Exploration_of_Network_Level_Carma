@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<additional>
+  <tlLogic id="C" type="actuated" programID="actuated" offset="0">
+    <param key="max-gap" value="3.0" />
+    <param key="detector-gap" value="2.0" />
+    <param key="passing-time" value="2.0" />
+    <phase duration="42" state="GGGGGggrrrrrrrGGGGGggrrrrrrr" minDur="5" maxDur="50" />
+    <phase duration="3" state="yyyyyyyrrrrrrryyyyyyyrrrrrrr" />
+    <phase duration="42" state="rrrrrrrGGGGGggrrrrrrrGGGGGgg" minDur="5" maxDur="50" />
+    <phase duration="3" state="rrrrrrryyyyyyyrrrrrrryyyyyyy" />
+  </tlLogic>
+</additional>

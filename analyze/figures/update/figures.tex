@@ -1,0 +1,21 @@
+% Figures for the update (analyze/update_figures.py). Needs \usepackage{graphicx}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{carma_vs_actuated.pdf}
+    \caption{Carma cuts time lost per trip by 30--37\% against
+    actuated lights on one-lane roads, and increases it by 28--94\% on
+    two- and three-lane roads. Learned bids, reference setting (moderate demand, 6 trips per driver,
+    20\% urgent trips, lane bids, 80 starting carma), 7-day evaluation week; bars are means of
+    10 seeds, whiskers 95\% intervals.}
+    \label{fig:carma_vs_actuated}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{learned_price_300_days.pdf}
+    \caption{The learned price of priority is still falling after 300 days, 29--41\%
+    below the first month. Median winning bid in contested auctions as a share of starting carma,
+    3x3 grid, reference setting, 30-day means of 10 seeds with 95\% bands. From the first 300-day
+    run, made before the U-turn and driver fixes.}
+    \label{fig:learned_price}
+\end{figure}

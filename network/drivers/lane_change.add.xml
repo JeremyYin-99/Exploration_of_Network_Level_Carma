@@ -1,0 +1,9 @@
+<!-- Driver lane-change settings for the parameter study (docs/parameter_spec.md, "Drivers").
+     Redefines SUMO's default car type, which random trips use. lcStrategic="4": move to the lane
+     the route needs earlier (SUMO default 1). lcKeepRight="0": no keep-right lane changes
+     (default 1). With the defaults, carma's lane-by-lane greens let cars swerve from a green
+     lane into a red one a few metres before the stop line, causing emergency stops and
+     rear-end collisions. -->
+<additional>
+    <vType id="DEFAULT_VEHTYPE" lcStrategic="4" lcKeepRight="0"/>
+</additional>

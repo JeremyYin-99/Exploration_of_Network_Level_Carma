@@ -3,3 +3,6 @@ numpy
 torch
 pandas
 libsumo
+pylint
+ipykernel
+matplotlib

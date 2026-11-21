@@ -1,0 +1,8 @@
+experiment,p,mean_wait_improvement_pct,p95_wait_improvement_pct,mean_time_loss_improvement_pct,mean_delay_ratio_improvement_pct,throughput_per_hour_improvement_pct
+only_lane_urgency,0.9,43.178,25.897,43.634,24.628,1.409
+only_lane_urgency,1.0,62.395,43.786,55.854,30.166,1.272
+only_link_fixed,0.9,27.015,3.125,23.861,12.45,0.596
+only_link_fixed,1.0,54.973,31.35,49.508,26.431,1.359
+only_price_follower,1.0,43.846,21.62,33.262,17.56,1.405
+only_vehicle_random,1.0,46.808,22.686,38.986,20.748,1.322
+only_vehicle_urgency,1.0,28.999,8.1,9.486,4.261,1.007

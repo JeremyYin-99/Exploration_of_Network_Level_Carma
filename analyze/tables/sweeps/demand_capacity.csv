@@ -1,0 +1,7 @@
+configuration,last_ok_p,max_demand_ok_per_hour,first_jammed_p,jammed_demand_per_hour,levels_run
+default_lights,0.8,4500.0,0.7,5142.857,10
+only_lane_urgency,0.9,4000.0,0.8,4500.0,10
+only_link_fixed,1.0,3600.0,0.9,4000.0,10
+only_price_follower,1.0,3600.0,0.9,4000.0,10
+only_vehicle_random,1.0,3600.0,0.9,4000.0,10
+only_vehicle_urgency,1.0,3600.0,0.9,4000.0,10

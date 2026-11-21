@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<additional>
+  <tlLogic id="A1" type="actuated" programID="actuated" offset="0">
+    <param key="max-gap" value="3.0" />
+    <param key="detector-gap" value="2.0" />
+    <param key="passing-time" value="2.0" />
+    <phase duration="42" state="GGGggrrrrGGGG" minDur="5" maxDur="50" />
+    <phase duration="3" state="yyyyyrrrrGyyy" />
+    <phase duration="42" state="rrrrrGGGGGrrr" minDur="5" maxDur="50" />
+    <phase duration="3" state="rrrrryyyyGrrr" />
+  </tlLogic>
+  <tlLogic id="B0" type="actuated" programID="actuated" offset="0">
+    <param key="max-gap" value="3.0" />
+    <param key="detector-gap" value="2.0" />
+    <param key="passing-time" value="2.0" />
+    <phase duration="42" state="rrrrGGGGGGGgg" minDur="5" maxDur="50" />
+    <phase duration="3" state="rrrrGyyyyyyyy" />
+    <phase duration="42" state="GGGGGrrrrrrrr" minDur="5" maxDur="50" />
+    <phase duration="3" state="yyyyGrrrrrrrr" />
+  </tlLogic>
+  <tlLogic id="B1" type="actuated" programID="actuated" offset="0">
+    <param key="max-gap" value="3.0" />
+    <param key="detector-gap" value="2.0" />
+    <param key="passing-time" value="2.0" />
+    <phase duration="42" state="GGGGgrrrrrGGGGgrrrrr" minDur="5" maxDur="50" />
+    <phase duration="3" state="yyyyyrrrrryyyyyrrrrr" />
+    <phase duration="42" state="rrrrrGGGGgrrrrrGGGGg" minDur="5" maxDur="50" />
+    <phase duration="3" state="rrrrryyyyyrrrrryyyyy" />
+  </tlLogic>
+  <tlLogic id="B2" type="actuated" programID="actuated" offset="0">
+    <param key="max-gap" value="3.0" />
+    <param key="detector-gap" value="2.0" />
+    <param key="passing-time" value="2.0" />
+    <phase duration="42" state="GGGggrrrrGGGG" minDur="5" maxDur="50" />
+    <phase duration="3" state="yyyyyrrrrGyyy" />
+    <phase duration="42" state="rrrrrGGGGGrrr" minDur="5" maxDur="50" />
+    <phase duration="3" state="rrrrryyyyGrrr" />
+  </tlLogic>
+  <tlLogic id="C1" type="actuated" programID="actuated" offset="0">
+    <param key="max-gap" value="3.0" />
+    <param key="detector-gap" value="2.0" />
+    <param key="passing-time" value="2.0" />
+    <phase duration="42" state="GGGGGGGggrrrr" minDur="5" maxDur="50" />
+    <phase duration="3" state="Gyyyyyyyyrrrr" />
+    <phase duration="42" state="GrrrrrrrrGGGG" minDur="5" maxDur="50" />
+    <phase duration="3" state="Grrrrrrrryyyy" />
+  </tlLogic>
+</additional>
