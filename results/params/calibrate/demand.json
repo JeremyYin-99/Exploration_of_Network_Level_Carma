@@ -1,0 +1,47 @@
+{
+ "grid3_L1": {
+  "light": 2.6599,
+  "moderate": 2.2859,
+  "heavy": 2.183
+ },
+ "grid3_L2": {
+  "light": 1.3909,
+  "moderate": 1.1904,
+  "heavy": 1.0957
+ },
+ "grid3_L3": {
+  "light": 1.4236,
+  "moderate": 1.2115,
+  "heavy": 1.0884
+ },
+ "grid5_L1": {
+  "light": 1.2858,
+  "moderate": 1.053,
+  "heavy": 0.9587
+ },
+ "grid5_L2": {
+  "light": 0.7869,
+  "moderate": 0.6207,
+  "heavy": 0.5478
+ },
+ "grid5_L3": {
+  "light": 0.8154,
+  "moderate": 0.6192,
+  "heavy": 0.5377
+ },
+ "single_L1": {
+  "light": 3.5185,
+  "moderate": 3.1762,
+  "heavy": 2.9947
+ },
+ "single_L2": {
+  "light": 2.0612,
+  "moderate": 1.7936,
+  "heavy": 1.6575
+ },
+ "single_L3": {
+  "light": 2.0643,
+  "moderate": 1.7528,
+  "heavy": 1.6146
+ }
+}
