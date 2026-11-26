@@ -84,6 +84,14 @@ class Experiment:
     min_green: float = 0.0
     release_fraction: float = 1.0
     extend_green: bool = False
+    # Mixed populations with front-car bidding: group the cars of all types together (with the
+    # first type's grouper), and let the car at the head of each group bid by its own type's
+    # rule. False = each type groups only its own cars, so a lane holding two types makes two
+    # bids for the same green.
+    group_across_types: bool = False
+    # Persistent drivers only: give the types exactly their shares of the drivers (as closely as
+    # whole drivers allow) instead of drawing each driver's type at random.
+    exact_type_shares: bool = False
     # Persistent carma: the number of drivers in a fixed population whose balance carries over from
     # trip to trip (see drivers.py). Each departing vehicle is handed a random idle driver, who
     # keeps its bidder type. None = every vehicle starts its trip with a fresh balance.

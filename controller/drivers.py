@@ -48,9 +48,11 @@ class DriverPool:
     """A fixed set of drivers. `checkout` hands one to a departing vehicle, `checkin` takes the
     balance back when the trip ends."""
 
-    def __init__(self, n_drivers: int, types: list, default_carma: float, rng: random.Random):
+    def __init__(self, n_drivers: int, types: list, default_carma: float, rng: random.Random,
+                 exact: bool = False):
         """Create `n_drivers` drivers, giving each a bidder type drawn in proportion to the types'
-        share.
+        share. With `exact`, the number of drivers of each type follows the shares as closely as
+        whole drivers allow (largest remainders), and the types are dealt out in random order.
         """
         # The random stream used to give drivers their types and to pick who drives next.
         self.rng = rng
@@ -61,8 +63,18 @@ class DriverPool:
         weights = []
         for btype in types:
             weights.append(btype.share)
+        dealt = None
+        if exact:
+            quotas = [n_drivers * w / sum(weights) for w in weights]
+            counts = [int(q) for q in quotas]
+            by_remainder = sorted(range(len(types)), key=lambda i: quotas[i] - counts[i],
+                                  reverse=True)
+            for i in by_remainder[:n_drivers - sum(counts)]:
+                counts[i] += 1
+            dealt = [btype for btype, count in zip(types, counts) for _ in range(count)]
+            rng.shuffle(dealt)
         for number in range(n_drivers):
-            btype = rng.choices(types, weights=weights)[0]
+            btype = dealt[number] if dealt else rng.choices(types, weights=weights)[0]
             # A type may have its own starting balance; otherwise use the experiment's.
             if btype.initial_carma is not None:
                 start = btype.initial_carma
@@ -73,14 +85,26 @@ class DriverPool:
             self._idle.append(driver.id)
         # Departures that found nobody free (the vehicle then gets a throwaway balance).
         self.guest_trips = 0
+        # Commuter trips whose own driver was still on an earlier trip (see checkout).
+        self.swapped_trips = 0
 
-    def checkout(self) -> Driver | None:
-        """A random idle driver, now on a trip. None if every driver is already driving."""
+    def checkout(self, prefer: str | None = None) -> Driver | None:
+        """A random idle driver, now on a trip. None if every driver is already driving.
+
+        prefer  the driver who owns this trip (commuters: the same trips every day). Taken if
+                idle; otherwise a random idle driver drives it and the trip counts as swapped."""
         # More vehicles than drivers: the extra vehicle drives as a "guest" with a fresh balance.
         if not self._idle:
             self.guest_trips += 1
             return None
-        index = self.rng.randrange(len(self._idle))
+        index = None
+        if prefer is not None:
+            if self.drivers[prefer].on_trip:
+                self.swapped_trips += 1
+            else:
+                index = self._idle.index(prefer)
+        if index is None:
+            index = self.rng.randrange(len(self._idle))
         # Swap-remove: O(1) removal of a random element.
         self._idle[index], self._idle[-1] = self._idle[-1], self._idle[index]
         driver = self.drivers[self._idle.pop()]

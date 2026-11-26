@@ -78,6 +78,8 @@ CONFLICT_MODE = "program"
 GRID_VARIANT = "noU"
 # Strategies that ignore the bidding unit and starting carma: run once per baseline key, shared.
 BASELINES = ("actuated", "stop", "maxpressure")
+# The five fixed bidding rules, and the "mix" strategy that splits drivers evenly among them.
+MIX = ("random", "fraction", "wait", "uwait", "ufrac")
 
 
 def net_files(network: str, lanes: int) -> tuple[Path, Path]:
@@ -229,6 +231,58 @@ def plan_cells(plan: str) -> list[dict]:
         cells += [{**vary(**ref, bidding=b, extend=e), "_runs": [(("learn", "wait"), s5)]}
                   for b in ("vehicle", "lane", "phase") for e in (False, True)
                   if (b, e) != ("lane", False)]
+    elif plan == "fixed":
+        # Fixed bidding rules (decided 2026-11-20): each rule alone, then an even split of all
+        # five, against the baselines, in every network configuration's reference cell, 10 seeds,
+        # 7 warm-up days and the same 7-day evaluation week as the quick plan.
+        rules = MIX + ("mix", "actuated", "stop", "maxpressure")
+        cells = [{**vary(network=n, lanes=lanes), "_runs": [(rules, tuple(range(10)))]}
+                 for n in ("single", "grid3", "grid5") for lanes in (1, 2, 3)]
+    elif plan == "sweep300":
+        # Research question 3 (decided 2026-11-21, overnight on both Macs): learned bids after
+        # 300 days when one setting moves from the reference: starting carma, demand, the share
+        # of urgent trips, trips per driver and the bidding unit; every network at 1 and 2 lanes,
+        # 10 seeds, with actuated lights for pairing. The reference cells are in plan price300.
+        cells = []
+        for n in ("single", "grid3", "grid5"):
+            for lanes in (1, 2):
+                ref = {"network": n, "lanes": lanes}
+                cells += [vary(**ref, carma=c) for c in (10, 20, 40, 160, 320)]
+                cells += [vary(**ref, demand=d) for d in ("light", "heavy")]
+                cells += [vary(**ref, low=low) for low in (50, 20)]
+                cells += [vary(**ref, tpd=t) for t in (2, 10)]
+                cells += [vary(**ref, bidding=b) for b in ("vehicle", "phase")]
+        cells = [{**c, "_runs": [(("learn", "actuated"), tuple(range(10)))]} for c in cells]
+    elif plan == "commute":
+        # Commuters (decided 2026-11-21, the user's efficiency-vs-fairness question): every
+        # driver drives the same trips every day (PLAN_SETTINGS), so a driver has a lasting
+        # position (route length, busy approach) and it shows who keeps losing under each
+        # policy. Every rule alone, learned bids (--days 300) and actuated lights for pairing;
+        # every network at 1 and 2 lanes, 10 seeds.
+        cells = [{**vary(network=n, lanes=lanes), "_runs": [(("learn",) + MIX + ("actuated",), tuple(range(10)))]}
+                 for n in ("single", "grid3", "grid5") for lanes in (1, 2)]
+    elif plan == "fixed60":
+        # The fixed rules and the even mix after 60 warm-up days (PLAN_SETTINGS), the learning
+        # time learned bids get in the quick plan, so Figure 2 compares like with like (decided
+        # 2026-11-21). Actuated lights for pairing; stop signs and max-pressure are in "fixed".
+        cells = [{**vary(network=n, lanes=lanes), "_runs": [(MIX + ("mix", "actuated"), tuple(range(10)))]}
+                 for n in ("single", "grid3", "grid5") for lanes in (1, 2, 3)]
+    elif plan == "pooled":
+        # Pooled group bids (decided 2026-11-24, the user's request): every car of a lane or
+        # phase bids and the bids are summed, against front-car bids and every car alone. The
+        # fixed rules and the even mix, every network configuration's reference cell, 10 seeds,
+        # 7 warm-up days and the same evaluation week as plan "fixed" (which has the front-car
+        # lane bids). Actuated lights for pairing.
+        runs = [(MIX + ("mix", "actuated"), tuple(range(10)))]
+        cells = [{**vary(network=n, lanes=lanes, bidding=b), "_runs": runs}
+                 for n in ("single", "grid3", "grid5") for lanes in (1, 2, 3)
+                 for b in ("pool", "phasepool", "phase", "vehicle")]
+    elif plan == "mixlong":
+        # The even mix over a long horizon (decided 2026-11-21): does carma keep flowing between
+        # the rules, and does the delay ranking change? 200 warm-up days (PLAN_SETTINGS), then
+        # the usual evaluation week; every reference cell, 10 seeds.
+        cells = [{**vary(network=n, lanes=lanes), "_runs": [(("mix",), tuple(range(10)))]}
+                 for n in ("single", "grid3", "grid5") for lanes in (1, 2, 3)]
     elif plan == "price300":
         # Learned price over 300 days (decided 2026-11-20): each network configuration's reference
         # cell, learner A only, 10 seeds (--days 300; pick networks with --networks).
@@ -272,7 +326,9 @@ def plan_cells(plan: str) -> list[dict]:
 # Demand multipliers of the capacity plan (trips per day, times moderate demand).
 CAPACITY_FACTORS = (1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0)
 # Per-plan chain settings (default: 7-day warm-up and evaluation, no early stop at a jam).
-PLAN_SETTINGS = {"capacity": {"warmup_days": 3, "eval_days": 3, "jam_stop": True}}
+PLAN_SETTINGS = {"capacity": {"warmup_days": 3, "eval_days": 3, "jam_stop": True},
+                 "mixlong": {"warmup_days": 200}, "fixed60": {"warmup_days": 60},
+                 "commute": {"warmup_days": 60, "commute": True}}
 
 CALIBRATION_FACTORS = (0.8, 0.9, 1.0, 1.1, 1.25, 1.4, 1.6, 1.8, 2.0, 2.2, 2.5)
 CALIBRATION_SEEDS = (999001, 999002, 999003)
@@ -351,7 +407,8 @@ def build_experiment(cell: dict, strategy: str):
     from best_response import BestResponseLearner
     from bidders import BidderType, group_by_lane, group_by_phase, group_by_vehicle
     from conflicts import get_table
-    from strategies import FixedFraction, RandomFraction, UrgencyScaledWait, WaitTimeUrgency
+    from strategies import (FixedFraction, RandomFraction, UrgencyFraction, UrgencyScaledWait,
+                            WaitTimeUrgency)
 
     net_tls, net_stop = net_files(cell["network"], cell["lanes"])
     if strategy == "actuated":
@@ -361,19 +418,34 @@ def build_experiment(cell: dict, strategy: str):
     elif strategy == "maxpressure":
         cfg = config.signal_baseline("maxpressure", "max_pressure", min_green=10.0)
     else:
+        # Bidding units: every car alone; the front car of each lane or phase bids for it; or
+        # pooled ("pool" = lane, "phasepool" = phase): every car of the lane or phase bids from
+        # its own balance by its own rule, the bids are summed, and each pays its own bid.
         grouper, front_only = {"vehicle": (group_by_vehicle, False),
                                "lane": (group_by_lane, True),
-                               "phase": (group_by_phase, True)}[cell["bidding"]]
-        rule = {"learn": BestResponseLearner, "wait": lambda: WaitTimeUrgency(1.0),
-                "uwait": lambda: UrgencyScaledWait(1.0), "random": RandomFraction,
-                "fraction": lambda: FixedFraction(0.1)}[strategy]()
-        if hasattr(rule, "base"):
-            rule.base = float(cell["carma"])
-            rule.integer = True
+                               "phase": (group_by_phase, True),
+                               "pool": (group_by_lane, False),
+                               "phasepool": (group_by_phase, False)}[cell["bidding"]]
+        if strategy == "learn" and cell["bidding"] in ("pool", "phasepool"):
+            raise ValueError("learner A assumes one decider per group; pooled bids need fixed rules")
+        rules = {"learn": BestResponseLearner, "wait": lambda: WaitTimeUrgency(1.0),
+                 "uwait": lambda: UrgencyScaledWait(1.0), "random": RandomFraction,
+                 "fraction": lambda: FixedFraction(0.1), "ufrac": UrgencyFraction}
+        # "mix": an even split of the five fixed rules, each driver keeping one rule for good.
+        names = MIX if strategy == "mix" else (strategy,)
+        population = []
+        for name in names:
+            rule = rules[name]()
+            if hasattr(rule, "base"):
+                rule.base = float(cell["carma"])
+                rule.integer = True
+            population.append(BidderType(name, grouper, rule, sum, front_only=front_only))
         table = get_table(str(net_tls), CONFLICT_MODE)
         cfg = config.Experiment(
             name=strategy,
-            population=[BidderType(strategy, grouper, rule, sum, front_only=front_only)],
+            population=population,
+            group_across_types=len(population) > 1 and cell["bidding"] != "vehicle",
+            exact_type_shares=len(population) > 1,
             auction=NonConflictingGreedy(table.conflicts, tie_break="wait"),
             payment=FirstPrice(redistribute=True, free_if_uncontested=True, rebate_to="bidders",
                                integer=True, free_per_bid=True),
@@ -412,6 +484,20 @@ def read_balances(out: Path, label: str) -> dict | None:
     return dict(zip(table["driver"], table["final_carma"]))
 
 
+def commute_drivers(routes: Path, n_drivers: int, seed: int) -> dict[str, str]:
+    """Commuters: the driver who owns each trip of a route file, the same every day. The trips in
+    departure order are dealt round-robin over the drivers in a random order, so each driver gets
+    the same number of trips (within one) as far apart as possible, about INSERTION / tpd
+    seconds; a trip whose driver is still out is driven by someone else (swapped_trips)."""
+    import random
+    import xml.etree.ElementTree as ET
+    trips = sorted((float(v.get("depart")), v.get("id"))
+                   for v in ET.parse(routes).getroot().iter("vehicle"))
+    order = [f"d{i}" for i in range(n_drivers)]
+    random.Random(seed).shuffle(order)
+    return {vid: order[k % n_drivers] for k, (_, vid) in enumerate(trips)}
+
+
 def run_chain(chain: dict) -> dict:
     """All days of one chain (in a worker process): learning or warm-up days, then the frozen
     evaluation week. Resumable: finished days (their _run.csv exists) are skipped."""
@@ -437,14 +523,22 @@ def run_chain(chain: dict) -> dict:
     if status.get("finished") and status.get("evaluated_after") == days:
         return status
 
+    # Commuters drive the trips of the first evaluation day every day (the day's seed still
+    # draws urgencies and SUMO's randomness), each trip by the driver who owns it.
+    commute = bool(chain.get("commute", False))
+    commute_routes = (make_routes(cell["network"], cell["lanes"], p, EVAL_SEED_OFFSET + 1000 * seed + 1)
+                      if commute else None)
+    trip_drivers = (commute_drivers(commute_routes, drivers_of(cell), seed)
+                    if commute else None)
+
     def run_one(label: str, route_seed: int, balances, full_log: bool, extra: dict) -> dict:
         cfg = replace(base_cfg, bid_log="full" if (bids and full_log) else "none",
                       price_bin=float(chain["price_bin"]) if bids else None)
-        routes = make_routes(cell["network"], cell["lanes"], p, route_seed)
+        routes = commute_routes or make_routes(cell["network"], cell["lanes"], p, route_seed)
         return carma.run(
             cfg, gui=False, delay_ms=0, seed=route_seed, routes=str(routes), net=str(net),
             max_time=INSERTION + DRAIN, label=label, out_dir=str(out), save_history=False,
-            quiet=True, start_balances=balances, pool_seed=seed,
+            quiet=True, start_balances=balances, pool_seed=seed, trip_drivers=trip_drivers,
             jam_stop=bool(chain.get("jam_stop", False)),
             extra_info={"cell": cell_id(cell), "strategy": strategy, "chain_seed": seed, "p": p,
                         "drivers": drivers_of(cell), **{k: v for k, v in cell.items()},
@@ -479,6 +573,8 @@ def run_chain(chain: dict) -> dict:
                        "last_day": day, "days": days,
                        "guest_trips_max": max(status.get("guest_trips_max", 0),
                                               int(info.get("guest_trips", 0))),
+                       "swapped_trips_max": max(status.get("swapped_trips_max", 0),
+                                                int(info.get("swapped_trips", 0))),
                        "updated": time.strftime("%Y-%m-%d %H:%M:%S")})
         write_json(status_path, status)
         # Save disk. Every 30th day and the last 30 keep every file; other days keep the small
@@ -513,6 +609,8 @@ def run_chain(chain: dict) -> dict:
                            {"eval_day": e, "after_day": last_day})
             status["guest_trips_max"] = max(status.get("guest_trips_max", 0),
                                             int(info.get("guest_trips", 0)))
+            status["swapped_trips_max"] = max(status.get("swapped_trips_max", 0),
+                                              int(info.get("swapped_trips", 0)))
         if bids:
             balances = read_balances(out, label)
     status.update({"evaluated_after": last_day, "finished": True,
@@ -555,14 +653,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", maxsplit=1)[0])
     parser.add_argument("--plan", default="smoke",
                         choices=["smoke", "calibrate", "reference", "stage1", "main", "quick",
-                                 "capacity", "price300"])
+                                 "capacity", "price300", "fixed", "mixlong", "fixed60", "sweep300",
+                                 "commute", "pooled"])
     parser.add_argument("--networks", nargs="+", default=None,
                         help="run only the cells on these networks (e.g. grid3 single)")
+    parser.add_argument("--lanes", type=int, nargs="+", default=None,
+                        help="run only the cells with these lane counts (e.g. 1 2), for "
+                             "splitting a plan across machines")
     parser.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
     parser.add_argument("--days", type=int, default=300, help="learning days of learner A")
     parser.add_argument("--strategies", nargs="+", default=["learn", "actuated", "stop"],
-                        choices=["learn", "wait", "uwait", "random", "fraction", "actuated",
-                                 "stop", "maxpressure"])
+                        choices=["learn", "wait", "uwait", "random", "fraction", "ufrac", "mix",
+                                 "actuated", "stop", "maxpressure"])
     parser.add_argument("--log-every", type=int, default=10,
                         help="save the full bid log every N learning days (and the last 30)")
     parser.add_argument("--price-bin", type=float, default=300.0)
@@ -591,6 +693,8 @@ def main() -> None:
     cells = plan_cells(args.plan)
     if args.networks:
         cells = [c for c in cells if c["network"] in args.networks]
+    if args.lanes:
+        cells = [c for c in cells if c["lanes"] in args.lanes]
     if args.list:
         for cell in cells:
             print(f"{cell_id(cell):<48} p={p_of(cell):<7} drivers={drivers_of(cell)}")
@@ -629,7 +733,9 @@ def main() -> None:
             try:
                 status = future.result()
                 print(f"  [{n}/{len(chains)}] done {name} ({status.get('wall_minutes')} min, "
-                      f"guest trips max {status.get('guest_trips_max')})", flush=True)
+                      f"guest trips max {status.get('guest_trips_max')}"
+                      + (f", swapped trips max {status.get('swapped_trips_max')}"
+                         if chain.get("commute") else "") + ")", flush=True)
             except Exception as exc:  # noqa: BLE001
                 print(f"  [{n}/{len(chains)}] FAILED {name}: {exc!r}", flush=True)
     print(f"Done in {(time.time() - started) / 60:.1f} min.")

@@ -157,11 +157,26 @@ def step_intersection(tls, ctx, cfg, cars, grants, signals, log, observers=()):
         # each group into a Bid (ask the strategy for each car's bid, then aggregate). All the
         # types' bids go into the same auction.
         bids = []
-        for btype in cfg.bidder_types():
-            typed_cars = cars_by_kind.get(btype.name, [])
-            for group in btype.grouper(typed_cars):
+        if cfg.group_across_types:
+            # Mixed population with group bidding: the cars of a lane (or phase) form one group
+            # whatever their types. With front-car bidding the car at the head of the queue bids
+            # by its own type's rule; with pooled bidding (front_only off) every member bids by
+            # its own type's rule and the bids are summed. The bid is recorded under the front
+            # car's type.
+            types = {t.name: t for t in cfg.bidder_types()}
+            rules = {name: t.strategy for name, t in types.items()}
+            for group in cfg.bidder_types()[0].grouper(bidders):
+                front = min(group, key=lambda c: c.dist if c.dist is not None else float("inf"))
+                btype = types[front.kind]
                 bids.append(make_bid(group, tls, btype.strategy, btype.aggregate, ctx, btype.name,
-                                     btype.front_only, cfg.integer_carma))
+                                     btype.front_only, cfg.integer_carma,
+                                     None if btype.front_only else rules))
+        else:
+            for btype in cfg.bidder_types():
+                typed_cars = cars_by_kind.get(btype.name, [])
+                for group in btype.grouper(typed_cars):
+                    bids.append(make_bid(group, tls, btype.strategy, btype.aggregate, ctx,
+                                         btype.name, btype.front_only, cfg.integer_carma))
         # The auction picks the winning bid(s). With no bids there are no winners.
         winners = cfg.auction.run(bids)
         # What each bid had to beat (bid.rival / bid.contested), read by the payment rule, the
@@ -290,7 +305,8 @@ def run(cfg: Experiment = BASELINE, gui: bool = True, delay_ms: int = 100, seed:
         out_dir: str = "../results", save_history: bool = True, quiet: bool = False,
         extra_info: dict | None = None, jam_stop: bool = False, jam_share: float = 0.9,
         jam_seconds: float = 300, jam_min_cars: int = 100,
-        start_balances: dict | None = None, pool_seed: int | None = None) -> dict:
+        start_balances: dict | None = None, pool_seed: int | None = None,
+        trip_drivers: dict | None = None) -> dict:
     """Run one simulation and save its results. Returns a dict describing the run.
 
     routes        route file to simulate (default: the one in ROUTES).
@@ -308,6 +324,9 @@ def run(cfg: Experiment = BASELINE, gui: bool = True, delay_ms: int = 100, seed:
                   and a share jam_share or more of them are stopped, for jam_seconds in a row.
                   The time it happens is reported as jam_time. With jam_stop the run ends
                   there (a gridlocked run is not worth continuing).
+
+    trip_drivers  vehicle id -> the driver who owns that trip (commuters, who drive the same
+                  trips every day); None hands each trip to a random idle driver.
 
     If cfg.control is "default", the network's own traffic light programs run untouched and
     nothing bids. This is the control group for judging whether carma helps. "actuated" and
@@ -407,7 +426,8 @@ def run(cfg: Experiment = BASELINE, gui: bool = True, delay_ms: int = 100, seed:
             # seed then only decides departures. start_balances carries balances over from the
             # previous day (driver id -> carma).
             pool = DriverPool(cfg.persistent_drivers, types, cfg.initial_carma,
-                              random.Random(pool_seed) if pool_seed is not None else type_rng)
+                              random.Random(pool_seed) if pool_seed is not None else type_rng,
+                              exact=cfg.exact_type_shares)
             pool.rng = type_rng
             if cfg.urgency_mode == "driver" and cfg.urgency_levels:
                 driver_urgency = fixed_urgencies(sorted(pool.drivers, key=lambda d: int(d[1:])),
@@ -446,7 +466,7 @@ def run(cfg: Experiment = BASELINE, gui: bool = True, delay_ms: int = 100, seed:
                 # own type, balance and bid history. (If every driver is out, it is a guest.)
                 driver = None
                 if pool is not None:
-                    driver = pool.checkout()
+                    driver = pool.checkout(trip_drivers.get(vid) if trip_drivers else None)
                 if driver is not None:
                     car = Car(vid, driver.carma, driver.kind)
                     car.driver = driver.id
@@ -548,6 +568,7 @@ def run(cfg: Experiment = BASELINE, gui: bool = True, delay_ms: int = 100, seed:
             "max_in_network": max_in_network,
             "wall_seconds": time.time() - started,
             "guest_trips": pool.guest_trips if pool is not None else 0,
+            "swapped_trips": pool.swapped_trips if pool is not None else 0,
         }
         # Learners close the day (trips still running are cut here).
         for watcher in day_watchers:

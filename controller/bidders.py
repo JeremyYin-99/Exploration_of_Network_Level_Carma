@@ -208,12 +208,15 @@ def whole(amount: float, balance: float) -> float:
 
 def make_bid(members: list[Car], tls: str, strategy: BidStrategy,
              aggregate: Aggregator, ctx: Context, kind: str = "default",
-             front_only: bool = False, integer: bool = False) -> Bid:
+             front_only: bool = False, integer: bool = False,
+             member_strategies: dict | None = None) -> Bid:
     """Build one Bid from a group of cars: ask the strategy for each member's bid, collect the links
     the members need, and combine the member bids into the group amount.
 
     With front_only, only the member closest to the stop line is asked; the others bid 0. With
-    integer (whole units of carma), every bid is rounded down to a whole number.
+    integer (whole units of carma), every bid is rounded down to a whole number. With
+    member_strategies (bidder type name -> strategy; pooled groups in a mixed population), every
+    member bids by its own type's rule instead of `strategy`.
     """
     # Ask the strategy how much each member bids, keyed by vehicle id.
     member_bids = {}
@@ -233,7 +236,8 @@ def make_bid(members: list[Car], tls: str, strategy: BidStrategy,
         bidders = {front.vid}
     else:
         for c in members:
-            member_bids[c.vid] = strategy.amount(c, ctx)
+            rule = member_strategies.get(c.kind, strategy) if member_strategies else strategy
+            member_bids[c.vid] = rule.amount(c, ctx)
             if integer:
                 member_bids[c.vid] = whole(member_bids[c.vid], c.carma)
             links.add(c.link)

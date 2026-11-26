@@ -209,7 +209,9 @@ class AuctionHistory:
                 if self.keep_decisions and record.decision:
                     self._decisions.append({
                         "t": t, "tls": tls, "auction_id": auction_id, "vid": car.vid,
-                        "driver": getattr(car, "driver", None), "kind": bid.kind,
+                        # The car's own rule (in a pooled mixed group, members differ).
+                        "driver": getattr(car, "driver", None),
+                        "kind": getattr(car, "kind", bid.kind),
                         "balance": record.balance, "k": record.intersections_left,
                         "lost_here": record.lost_here, "urgency": record.urgency,
                         "wait": record.wait_time, "bid": record.own_bid,
