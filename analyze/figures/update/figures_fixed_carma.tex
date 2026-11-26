@@ -1,0 +1,54 @@
+% Carma use of the fixed bidding rules (analyze/fixed_rules_carma.py).
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{fixed_carma_bids.pdf}
+    \caption{Mean bid per auction decision of each fixed rule and of the even mix, in carma
+    (every driver starts with 80). Reference setting, 7-day evaluation week after 7 warm-up days;
+    means of 10 seeds, whiskers 95\% intervals.}
+    \label{fig:fixed_carma_bids}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{fixed_carma_paid.pdf}
+    \caption{Carma paid per trip: what changes hands. Winners of contested auctions pay their bid
+    and the payment is shared among the losing bidders, so in a single-rule run the carma paid
+    equals the rebates received and the total never changes. Settings as in
+    Figure~\ref{fig:fixed_carma_bids}.}
+    \label{fig:fixed_carma_paid}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{fixed_carma_urgent_calm.pdf}
+    \caption{How many times more carma each strategy pays per urgent trip than per calm trip
+    (1$\times$ = the same). Settings as in Figure~\ref{fig:fixed_carma_bids}.}
+    \label{fig:fixed_carma_urgent_calm}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{fixed_carma_balance_gini.pdf}
+    \caption{How unequal carma balances are at the end of the evaluation week (Gini coefficient
+    of driver balances; 0 = everyone holds the same). Settings as in
+    Figure~\ref{fig:fixed_carma_bids}.}
+    \label{fig:fixed_carma_balance_gini}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{fixed_carma_mix_balances.pdf}
+    \caption{The even mix: mean balance of each rule's drivers at the end of the evaluation week
+    (day 14; every driver started with 80, dashed line). Carma flows from the rules that bid a lot
+    to those that bid little and collect rebates. Means of 10 seeds, whiskers 95\% intervals.}
+    \label{fig:fixed_carma_mix_balances}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{fixed_carma_mix_days.pdf}
+    \caption{The even mix with 2 lanes per road: mean balance of each rule's drivers at the end of
+    every day, from the first warm-up day to the end of the evaluation week; labels give day 14.
+    Means of 10 seeds.}
+    \label{fig:fixed_carma_mix_days}
+\end{figure}
